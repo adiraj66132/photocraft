@@ -1586,6 +1586,32 @@ mod multi_layer_formatting {
         assert!(h.query_by_label("Hyphenate").is_none());
     }
 
+    /// #7713: justification stretches lines between the text box's edges, so Photoshop
+    /// enables its four buttons only for paragraph (box) text. A click on point text must
+    /// not silently store a justify alignment that layout then ignores.
+    #[test]
+    fn justify_buttons_need_paragraph_text() {
+        let (app, ids) = fixture();
+        let mut h = controls(app, true);
+        h.get_by_label("Justify all").click();
+        h.run();
+        for id in ids {
+            assert_eq!(text(h.state(), id).paragraph_runs()[0].style.align, TextAlign::Left, "point text keeps its alignment (#7713)");
+        }
+        let boxed = LayerId(
+            h.state_mut()
+                .run("type.create", json!({"box": [10, 10, 200, 300], "text": "one two three four five six seven eight", "size": 12}))
+                .unwrap()["layer"]
+                .as_u64()
+                .unwrap(),
+        );
+        selected(h.state_mut(), &[boxed]);
+        h.run();
+        h.get_by_label("Justify all").click();
+        h.run();
+        assert_eq!(text(h.state(), boxed).paragraph_runs()[0].style.align, TextAlign::JustifyAll);
+    }
+
     #[test]
     fn properties_edit_shown_metrics_and_paragraphs_with_a_non_type_primary() {
         let (mut app, ids) = fixture();

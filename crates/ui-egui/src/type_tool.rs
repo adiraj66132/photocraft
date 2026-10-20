@@ -2353,6 +2353,9 @@ fn type_sections(app: &mut PhotocraftApp, ui: &mut egui::Ui, character: bool, pa
         use photocraft_doc::text::TextAlign as A;
         let full = ui.available_width();
         let w = field_width(full, 2, LABEL_W);
+        // Justification stretches lines between the box edges, so Photoshop enables its four
+        // buttons only for paragraph (box) text; on point text they are greyed out (#7713).
+        let is_box = target_text(app).is_some_and(|tl| matches!(tl.shape, photocraft_doc::text::TextShape::Box { .. }));
         let items = [
             ("left", tl!("Left align text"), A::Left),
             ("center", tl!("Center text"), A::Center),
@@ -2366,11 +2369,18 @@ fn type_sections(app: &mut PhotocraftApp, ui: &mut egui::Ui, character: bool, pa
         ui.horizontal(|ui| {
             ui.spacing_mut().item_spacing.x = 2.0;
             for (key, tip, a) in items {
-                let clicked = toggle_cell(ui, cw, para.align == a, tip, |ui, r, col| {
-                    // The glyph keeps its size; the cell grows around it.
-                    let g = egui::Rect::from_center_size(r.center(), egui::vec2(12.0, 10.0));
-                    align_glyph(ui.painter(), g, a, if para.align == a { col } else { t.icon });
-                });
+                let justify = a.is_justified();
+                let dim = justify && !is_box; // greyed like Photoshop's without a text box
+                let clicked = ui
+                    .add_enabled_ui(!dim, |ui| {
+                        toggle_cell(ui, cw, para.align == a, tip, |ui, r, col| {
+                            let col = if dim { t.text_faint } else if para.align == a { col } else { t.icon };
+                            // The glyph keeps its size; the cell grows around it.
+                            let g = egui::Rect::from_center_size(r.center(), egui::vec2(12.0, 10.0));
+                            align_glyph(ui.painter(), g, a, col);
+                        })
+                    })
+                    .inner;
                 if clicked {
                     apply(app, ui.ctx(), json!({"align": key}));
                 }
