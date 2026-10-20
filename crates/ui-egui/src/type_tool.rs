@@ -2374,7 +2374,13 @@ fn type_sections(app: &mut PhotocraftApp, ui: &mut egui::Ui, character: bool, pa
                 let clicked = ui
                     .add_enabled_ui(!dim, |ui| {
                         toggle_cell(ui, cw, para.align == a, tip, |ui, r, col| {
-                            let col = if dim { t.text_faint } else if para.align == a { col } else { t.icon };
+                            let col = if dim {
+                                t.text_faint
+                            } else if para.align == a {
+                                col
+                            } else {
+                                t.icon
+                            };
                             // The glyph keeps its size; the cell grows around it.
                             let g = egui::Rect::from_center_size(r.center(), egui::vec2(12.0, 10.0));
                             align_glyph(ui.painter(), g, a, col);
