@@ -715,3 +715,21 @@ fn options_bar_hover_previews_with_the_character_picker_also_shown() {
     h.run();
     assert_eq!(font(&mut h), "Inter", "leaving the row restores the committed font");
 }
+
+/// #7900: the search field stays at the top of the font menu while the list scrolls.
+#[test]
+fn the_search_field_stays_put_when_the_list_scrolls() {
+    let mut h = harness();
+    open(&mut h);
+    let popup = popup_rect(&h).expect("font menu open");
+    let before = h.get_by_role(Role::TextInput).rect();
+    let row = h.get_by_label("Family 10").rect().center();
+    h.hover_at(row);
+    h.event(egui::Event::MouseWheel { unit: egui::MouseWheelUnit::Point, delta: vec2(0.0, -240.0), phase: egui::TouchPhase::Move, modifiers: Modifiers::NONE });
+    h.run_steps(4);
+    let after = h.get_by_role(Role::TextInput).rect();
+    let row_after = h.get_by_label("Family 10").rect();
+    assert!(row_after.top() < row.y - 100.0, "the list scrolled: row {:?} -> {row_after:?}", row);
+    assert_eq!(before, after, "the search field scrolled away with the list (#7900)");
+    assert!(after.top() >= popup.top() && after.bottom() <= popup.bottom(), "field {after:?} stays inside popup {popup:?}");
+}
